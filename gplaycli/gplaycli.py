@@ -147,8 +147,8 @@ class GPlaycli:
 		if args.additional_files is not None:
 			self.addfiles_enable = args.additional_files
 
-		if args.token is not None:
-			self.token_enable = args.token
+		#if args.token is not None:
+		#	self.token_enable = args.token
 		if self.token_enable is not None:
 			if args.token_url is not None:
 				self.token_url = args.token_url
@@ -250,9 +250,9 @@ class GPlaycli:
 
 			if filename is None:
 				if self.append_version:
-					filename = "%s-v.%s.apk" % (detail['docId'], detail['versionString'])
+					filename = "%s-v.%s.apk" % (detail['docid'], detail['versionString'])
 				else:
-					filename = "%s.apk" % detail['docId']
+					filename = "%s.apk" % detail['docid']
 
 			logger.info("%s / %s %s", 1+position, len(pkg_todownload), packagename)
 
@@ -294,7 +294,7 @@ class GPlaycli:
 					bar.done()
 				if additional_data:
 					for obb_file in additional_data:
-						obb_filename = "%s.%s.%s.obb" % (obb_file["type"], obb_file["versionCode"], data_iter["docId"])
+						obb_filename = "%s.%s.%s.obb" % (obb_file["type"], obb_file["versionCode"], data_iter["docid"])
 						obb_filename = os.path.join(download_folder, obb_filename)
 						obb_total_size = int(obb_file['file']['total_size'])
 						obb_chunk_size = int(obb_file['file']['chunk_size'])
@@ -354,7 +354,7 @@ class GPlaycli:
 					  if result['installationSize'] > 0 else 'N/A',
 					  result['numDownloads'],
 					  result['uploadDate'],
-					  result['docId'],
+					  result['docid'],
 					  result['versionCode'],
 					  "%.2f" % result["aggregateRating"]["starRating"]
 					  ]
@@ -421,8 +421,25 @@ class GPlaycli:
 		elif self.keyring_service and not HAVE_KEYRING:
 			logger.error("You asked for keyring service but keyring package is not installed")
 			return False, ERRORS.KEYRING_NOT_INSTALLED
+
+		if os.path.isfile(self.tokencachefile):
+			logger.info("Logging in with cached token from password")
+			cache_dic = json.loads(open(self.tokencachefile).read())
+			token = cache_dic['token']
+			gsfId = cache_dic['gsfid']
+
+			try:
+				self.api.login(gsfId=gsfId, authSubToken=token)
+			except LoginError as e:
+				# fall back to password-based login
+				logger.error("Falling back to password authentication (%s)", e)
+
 		try:
 			self.api.login(email=self.gmail_address, password=password)
+
+			f = open(self.tokencachefile, "w")
+			f.write(json.dumps( {"token": self.api.authSubToken, "gsfid": self.api.gsfId} ))
+			f.close()
 		except LoginError as e:
 			logger.error("Bad authentication, login or password incorrect (%s)", e)
 			return False, ERRORS.CANNOT_LOGIN_GPLAY
