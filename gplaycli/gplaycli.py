@@ -430,6 +430,7 @@ class GPlaycli:
 
 			try:
 				self.api.login(gsfId=gsfId, authSubToken=token)
+				return True, None
 			except LoginError as e:
 				# fall back to password-based login
 				logger.error("Falling back to password authentication (%s)", e)
