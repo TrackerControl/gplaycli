@@ -240,7 +240,7 @@ class GPlaycli:
 			except RequestError as request_error:
 				failed_downloads.append((pkg, request_error))
 
-		if any([d is None for d in details]):
+		if any([d is None or 'docid' not in d for d in details]):
 			logger.info("Token has expired while downloading. Retrieving a new one.")
 			self.refresh_token()
 			details = self.api.bulkDetails([pkg[0] for pkg in pkg_todownload])
@@ -250,9 +250,9 @@ class GPlaycli:
 
 			if filename is None:
 				if self.append_version:
-					filename = "%s-v.%s.apk" % (detail['docId'], detail['versionString'])
+					filename = "%s-v.%s.apk" % (detail['docid'], detail['versionString'])
 				else:
-					filename = "%s.apk" % detail['docId']
+					filename = "%s.apk" % detail['docid']
 
 			logger.info("%s / %s %s", 1+position, len(pkg_todownload), packagename)
 
@@ -294,7 +294,7 @@ class GPlaycli:
 					bar.done()
 				if additional_data:
 					for obb_file in additional_data:
-						obb_filename = "%s.%s.%s.obb" % (obb_file["type"], obb_file["versionCode"], data_iter["docId"])
+						obb_filename = "%s.%s.%s.obb" % (obb_file["type"], obb_file["versionCode"], data_iter["docid"])
 						obb_filename = os.path.join(download_folder, obb_filename)
 						obb_total_size = int(obb_file['file']['total_size'])
 						obb_chunk_size = int(obb_file['file']['chunk_size'])
@@ -354,7 +354,7 @@ class GPlaycli:
 					  if result['installationSize'] > 0 else 'N/A',
 					  result['numDownloads'],
 					  result['uploadDate'],
-					  result['docId'],
+					  result['docid'],
 					  result['versionCode'],
 					  "%.2f" % result["aggregateRating"]["starRating"]
 					  ]
