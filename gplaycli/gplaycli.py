@@ -230,9 +230,8 @@ class GPlaycli:
 		if not os.path.isdir(download_folder):
 			os.makedirs(download_folder, exist_ok=True)
 
-		# BulkDetails requires only one HTTP request
 		# Get APK info from store
-		details = list()
+		details = []
 		for pkg in pkg_todownload:
 			try:
 				detail = self.api.details(pkg[0])
@@ -242,8 +241,16 @@ class GPlaycli:
 
 		if any([d is None or 'docid' not in d for d in details]):
 			logger.info("Token has expired while downloading. Retrieving a new one.")
-			self.refresh_token()
-			details = self.api.bulkDetails([pkg[0] for pkg in pkg_todownload])
+			self.retrieve_token(force_new=True)
+
+			details           = []
+			failed_downloads  = []
+			for pkg in pkg_todownload:
+				try:
+					detail = self.api.details(pkg[0])
+					details.append(detail)
+				except RequestError as request_error:
+					failed_downloads.append((pkg, request_error))
 
 		for position, (detail, item) in enumerate(zip(details, pkg_todownload)):
 			packagename, filename = item
